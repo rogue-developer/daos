@@ -47,6 +47,7 @@ from SCons.Script import SetOption
 from SCons.Script import Configure
 from SCons.Script import AddOption
 from SCons.Script import SConscript
+from SCons.Errors import InternalError
 # pylint: disable=no-name-in-module
 # pylint: disable=import-error
 from SCons.Errors import UserError
@@ -748,7 +749,13 @@ class PreReqComponent():
 
     def _setup_intelc(self):
         """Setup environment to use intel compilers"""
-        env = self.__env.Clone(tools=['intelc'])
+        try:
+            env = self.__env.Clone(tools=['doneapi'])
+        except InternalError as err:
+            print("No oneapi compiler, trying legacy")
+            env = self.__env.Clone(tools=['intelc'])
+        self.__env["ENV"]["PATH"] = env["ENV"]["PATH"]
+        print("path=%s\n" % self.__env["ENV"]["PATH"])
         self.__env.Replace(AR=env.get("AR"))
         self.__env.Replace(ENV=env.get("ENV"))
         self.__env.Replace(CC=env.get("CC"))
@@ -763,6 +770,7 @@ class PreReqComponent():
                                          "-diag-disable:188",
                                          "-diag-disable:2405",
                                          "-diag-disable:1338"])
+        return {'CC' : env.get("CC"), "CXX" : env.get("CXX")}
 
     def _setup_compiler(self, warning_level):
         """Setup the compiler to use"""
@@ -772,7 +780,6 @@ class PreReqComponent():
                                   'CVS' : '/opt/BullseyeCoverage/bin/covselect',
                                   'COV01' : '/opt/BullseyeCoverage/bin/cov01'},
                         'clang' : {'CC' : 'clang', 'CXX' : 'clang++'},
-                        'icc' : {'CC' : 'icc', 'CXX' : 'icpc'},
                        }
         self.add_opts(EnumVariable('COMPILER', "Set the compiler family to use",
                                    'gcc', ['gcc', 'covc', 'clang', 'icc'],
@@ -783,7 +790,7 @@ class PreReqComponent():
 
         compiler = self.__env.get('COMPILER').lower()
         if compiler == 'icc':
-            self._setup_intelc()
+            compiler_map['icc'] = self._setup_intelc()
 
         if warning_level == 'error':
             if compiler == 'icc':

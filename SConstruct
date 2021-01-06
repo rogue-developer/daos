@@ -29,8 +29,7 @@ DESIRED_FLAGS = ['-Wno-gnu-designator',
 #                 '-mavx2']
 
 # Compiler flags to prevent optimizing out security checks
-DESIRED_FLAGS.extend(['-fno-strict-overflow', '-fno-delete-null-pointer-checks',
-                      '-fwrapv'])
+DESIRED_FLAGS.extend(['-fno-strict-overflow', '-fwrapv'])
 
 # Compiler flags for stack hardening
 DESIRED_FLAGS.extend(['-fstack-protector-strong', '-fstack-clash-protection'])
@@ -158,6 +157,8 @@ def set_defaults(env, daos_version):
             env.Append(CCFLAGS=['-DDAOS_BUILD_RELEASE'])
         env.AppendUnique(CCFLAGS=['-O2', '-D_FORTIFY_SOURCE=2'])
 
+    if env["CC"] != 'icx':
+        DESIRED_FLAGS.extend(['-fno-delete-null-pointer-checks'])
     env.AppendIfSupported(CCFLAGS=DESIRED_FLAGS)
 
     if GetOption("preprocess"):
