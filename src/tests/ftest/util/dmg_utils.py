@@ -10,12 +10,23 @@ from pwd import getpwuid
 import re
 import json
 import yaml
+import time
 
+from command_utils_base import CommandFailure
 from dmg_utils_base import DmgCommandBase
 from general_utils import get_numeric_list
 from dmg_utils_params import DmgYamlParameters, DmgTransportCredentials
 from command_utils import CommandFailure
 
+RETRYABLE_POOL_CREATE_ERRORS = [
+    -1006, # -DER_UNREACH: Can happen after ranks are killed but before
+           #               SWIM has noticed and excluded them.
+    -1019, # -DER_OOG: Can happen after restart.
+]
+POOL_RETRY_INTERVAL = 1 # seconds
+
+class DmgJsonCommandFailure(CommandFailure):
+    """Exception raised when a dmg --json command fails."""
 
 def get_dmg_command(group, cert_dir, bin_dir, config_file, config_temp=None):
     """Get a dmg command object.
@@ -79,17 +90,23 @@ class DmgCommand(DmgCommandBase):
             r"Targets:\[[0-9 ]+\]\s+Rank:\d+\s+State:(\w+))",
     }
 
-    def _get_json_result(self, sub_command_list=None, **kwargs):
-        """Wrap the base _get_result method to force JSON output."""
+    def _get_json_result(self, sub_command_list=None, json_err=False,
+                         **kwargs):
+        """Wraps the base _get_result method to force JSON output."""
         prev_json_val = self.json.value
         self.json.update(True)
         prev_output_check = self.output_check
         self.output_check = "both"
+        if json_err:
+            prev_exit_exception = self.exit_status_exception
+            self.exit_status_exception = False
         try:
             self._get_result(sub_command_list, **kwargs)
         finally:
             self.json.update(prev_json_val)
             self.output_check = prev_output_check
+            if json_err:
+                self.exit_status_exception = prev_exit_exception
         return json.loads(self.result.stdout)
 
     def network_scan(self, provider=None):
@@ -455,7 +472,19 @@ class DmgCommand(DmgCommandBase):
         # },
         # "error": null,
         # "status": 0
-        output = self._get_json_result(("pool", "create"), **kwargs)
+        output = self._get_json_result(("pool", "create"),
+                                       json_err=True, **kwargs)
+        if output["error"] is not None:
+            self.log.error(output["error"])
+            if output["status"] in RETRYABLE_POOL_CREATE_ERRORS:
+                time.sleep(POOL_RETRY_INTERVAL)
+                return self.pool_create(scm_size, uid=uid, gid=gid,
+                                        nvme_size=nvme_size,
+                                        target_list=target_list,
+                                        svcn=svcn,
+                                        acl_file=acl_file)
+            raise DmgJsonCommandFailure(output["error"])
+
         if output["response"] is None:
             return data
 
@@ -617,9 +646,12 @@ class DmgCommand(DmgCommandBase):
             dict: a dictionary of pool UUID keys and svc replica values
 
         """
+        if self.json.value:
+            return self._get_json_result(("pool", "list"))
+
         self._get_result(("pool", "list"))
 
-        # Populate a dictionary with svc replicas for each pool UUID key listed
+        # Populate a dictionary with svc replicas for each pool UUID key
         # Sample dmg pool list output:
         #    Pool UUID                            Svc Replicas
         #    ---------                            ------------

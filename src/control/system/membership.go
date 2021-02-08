@@ -531,8 +531,6 @@ func (m *Membership) OnEvent(_ context.Context, evt *events.RASEvent) {
 	switch evt.ID {
 	case events.RASEngineDied:
 		m.handleEngineFailure(evt)
-	default:
-		m.log.Debugf("no handler registered for event: %v", evt)
 	}
 }
 
