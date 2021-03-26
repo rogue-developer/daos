@@ -66,6 +66,10 @@ enum daos_pool_props {
 	 * The pool svc rank list.
 	 */
 	DAOS_PROP_PO_SVC_LIST,
+	/**
+	 * Media selection policy
+	 */
+	DAOS_PROP_PO_POLICY,
 	DAOS_PROP_PO_MAX,
 };
 
@@ -320,6 +324,11 @@ daos_prop_val_2_co_status(uint64_t val, struct daos_co_status *co_status)
 	co_status->dcs_status = (uint16_t)((val >> 32) & 0xFFFF);
 	co_status->dcs_pm_ver = (uint32_t)(val & 0xFFFFFFFF);
 }
+
+// struct daos_prop_params {
+// 	uint64_t dpp_num_params;
+// 	uint64_t *dpp_params_arr;
+// };
 
 struct daos_prop_entry {
 	/** property type, see enum daos_pool_props/daos_cont_props */
