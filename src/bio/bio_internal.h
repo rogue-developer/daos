@@ -180,21 +180,79 @@ struct bio_dma_buffer {
 	  "", D_TM_GAUGE)						\
 	X(bdh_volatile_mem_warn, "volatile_mem_warn",			\
 	  "Set to 1 when volatile memory backup device has failed",	\
-	  "", D_TM_GAUGE)
+	  "", D_TM_GAUGE)						\
+	X(bdh_prog_fail_cnt_norm, "program_fail_cnt_norm",		\
+	  "Percent remaining of allowable program fails",		\
+	  "%", D_TM_COUNTER)						\
+	X(bdh_prog_fail_cnt_raw, "program_fail_cnt_raw",			\
+	  "Total count of current program fails",			\
+	  "", D_TM_COUNTER)						\
+	X(bdh_erase_fail_cnt_norm, "erase_fail_cnt_norm",		\
+	  "Percent remaining of allowable erase fails",			\
+	  "%", D_TM_COUNTER)						\
+	X(bdh_erase_fail_cnt_raw, "erase_fail_cnt_raw",			\
+	  "Total count of current erase fails",				\
+	  "", D_TM_COUNTER)						\
+	X(bdh_wear_leveling_cnt_norm, "wear_leveling_cnt_norm",		\
+	  "Wear leveling count remaining, decrements from 100 to 0",	\
+	  "", D_TM_COUNTER)						\
+	X(bdh_wear_leveling_cnt_min, "wear_leveling_cnt_min",		\
+	  "Wear leveling minimum erase cycle",				\
+	  "", D_TM_COUNTER)						\
+	X(bdh_wear_leveling_cnt_max, "wear_leveling_cnt_max",           \
+	  "Wear leveling maximum erase cycle",                          \
+	  "", D_TM_COUNTER)                                             \
+	X(bdh_wear_leveling_cnt_avg, "wear_leveling_cnt_avg",           \
+	  "Wear leveling average erase cycle",                          \
+	  "", D_TM_COUNTER)						\
+	X(bdh_endtoend_err_cnt_raw, "endtoend_err_cnt_raw",		\
+	  "End-to-End detected and corrected errors by hardware",	\
+	  "", D_TM_COUNTER)						\
+	X(bdh_crc_err_cnt_raw, "crc_err_cnt_raw",			\
+	  "PCIe Interface CRC errors encountered",			\
+	  "", D_TM_COUNTER)						\
+	X(bdh_media_wear_raw, "media_wear_raw",				\
+	  "Wear seen by the SSD as a percentage of the maximum rated cycles", \
+	  "%", D_TM_COUNTER)						\
+	X(bdh_host_reads_raw, "host_reads_raw",				\
+	  "Percentage of I/O operations that are a read operation",	\
+	  "%", D_TM_COUNTER)						\
+	X(bdh_workload_timer_raw, "crc_workload_timer_raw",		\
+	  "The elapsed time since starting the workload timer",		\
+	  "minutes", D_TM_COUNTER)					\
+	X(bdh_thermal_throttle_status, "thermal_throttle_status_raw",	\
+	  "Thermal throttle status",					\
+	  "%", D_TM_COUNTER)						\
+	X(bdh_thermal_throttle_event_cnt, "thermal_throttle_event_cnt",	\
+	  "Thermal throttling event count",				\
+	  "", D_TM_COUNTER)						\
+	X(bdh_retry_buffer_overflow_cnt, "retry_buffer_overflow_cnt",	\
+	  "Retry Buffer overflow count",				\
+	  "", D_TM_COUNTER)						\
+	X(bdh_pll_lock_loss_cnt, "pll_lock_loss_cnt",			\
+	  "PCIe Refclock PLL unlock count",				\
+	  "", D_TM_COUNTER)						\
+	X(bdh_nand_bytes_written, "nand_bytes_written",			\
+	  "NAND bytes written (1 count = 32 MiB)",			\
+	  "", D_TM_COUNTER)						\
+	X(bdh_host_bytes_written, "host_bytes_written",			\
+	  "Host bytes written (1 count = 32 MiB)",			\
+	  "", D_TM_COUNTER)
 
 /*
  * SPDK device health monitoring.
  */
 struct bio_dev_health {
-	struct nvme_stats		 bdh_health_state;
+	struct nvme_stats	 bdh_health_state;
 	/* writable open descriptor for health info polling */
-	struct spdk_bdev_desc		*bdh_desc;
-	struct spdk_io_channel		*bdh_io_channel;
-	void				*bdh_health_buf; /* health info logs */
-	void				*bdh_ctrlr_buf; /* controller data */
-	void				*bdh_error_buf; /* device error logs */
-	uint64_t			 bdh_stat_age;
-	unsigned int			 bdh_inflights;
+	struct spdk_bdev_desc	*bdh_desc;
+	struct spdk_io_channel	*bdh_io_channel;
+	void			*bdh_health_buf; /* health info logs */
+	void			*bdh_ctrlr_buf; /* controller data */
+	void			*bdh_error_buf; /* device error logs */
+	void			*bdh_intel_smart_buf; /* Intel SMART attributes */
+	uint64_t		 bdh_stat_age;
+	unsigned int		 bdh_inflights;
 
 	/**
 	 * NVMe statistics exported via telemetry framework

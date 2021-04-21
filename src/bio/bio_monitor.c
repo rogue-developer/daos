@@ -9,6 +9,7 @@
 #include <spdk/bdev.h>
 #include <spdk/blob.h>
 #include <spdk/io_channel.h>
+#include <spdk/nvme_intel.h>
 #include "bio_internal.h"
 #include <daos_srv/smd.h>
 
@@ -280,6 +281,162 @@ out:
 	spdk_bdev_free_io(bdev_io);
 }
 
+/* Return a uint64 raw value from a byte array */
+static uint64_t
+extend_to_uint64(uint8_t *array, unsigned int len)
+{
+	uint64_t value = 0;
+	int i = len;
+
+	while (i > 0) {
+		value += (uint64_t)array[i - 1] << (8 * (i - 1));
+		i--;
+	}
+
+	return value;
+}
+
+static void
+populate_intel_smart_stats(struct bio_dev_health *bdh)
+{
+	struct spdk_nvme_intel_smart_information_page	*isp;
+	struct nvme_stats				*dev_state;
+	struct spdk_nvme_intel_smart_attribute		atb;
+	int i;
+
+	isp		= bdh->bdh_intel_smart_buf;
+	dev_state	= &bdh->bdh_health_state;
+
+	/** Intel vendor unique SMART attributes */
+	for (i = 0; i < SPDK_COUNTOF(isp->attributes); i++) {
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_PROGRAM_FAIL_COUNT) {
+			atb = isp->attributes[i];
+			dev_state->program_fail_cnt_norm = atb.normalized_value;
+			d_tm_set_counter(bdh->bdh_prog_fail_cnt_norm,
+					 atb.normalized_value);
+			dev_state->program_fail_cnt_raw =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_prog_fail_cnt_raw,
+					 dev_state->program_fail_cnt_raw);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_ERASE_FAIL_COUNT) {
+			atb = isp->attributes[i];
+			dev_state->erase_fail_cnt_norm = atb.normalized_value;
+			d_tm_set_counter(bdh->bdh_erase_fail_cnt_norm,
+					 atb.normalized_value);
+			dev_state->erase_fail_cnt_raw =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_erase_fail_cnt_raw,
+					 dev_state->erase_fail_cnt_raw);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_WEAR_LEVELING_COUNT) {
+			atb = isp->attributes[i];
+			dev_state->wear_leveling_cnt_norm = atb.normalized_value;
+			d_tm_set_counter(bdh->bdh_wear_leveling_cnt_norm,
+					 atb.normalized_value);
+			dev_state->wear_leveling_cnt_min = atb.raw_value[0] |
+							atb.raw_value[1] << 8;
+			d_tm_set_counter(bdh->bdh_wear_leveling_cnt_min,
+					 dev_state->wear_leveling_cnt_min);
+			dev_state->wear_leveling_cnt_max = atb.raw_value[2] |
+							atb.raw_value[3] << 8;
+			d_tm_set_counter(bdh->bdh_wear_leveling_cnt_max,
+					 dev_state->wear_leveling_cnt_max);
+			dev_state->wear_leveling_cnt_avg = atb.raw_value[4] |
+							atb.raw_value[5] << 8;
+			d_tm_set_counter(bdh->bdh_wear_leveling_cnt_avg,
+					 dev_state->wear_leveling_cnt_avg);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_E2E_ERROR_COUNT) {
+			atb = isp->attributes[i];
+			dev_state->endtoend_err_cnt_raw =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_endtoend_err_cnt_raw,
+					 dev_state->endtoend_err_cnt_raw);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_CRC_ERROR_COUNT) {
+			atb = isp->attributes[i];
+			dev_state->crc_err_cnt_raw =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_crc_err_cnt_raw,
+					 dev_state->crc_err_cnt_raw);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_MEDIA_WEAR) {
+			atb = isp->attributes[i];
+			/* divide raw value by 1024 to derive the percentage */
+			dev_state->media_wear_raw =
+				extend_to_uint64(atb.raw_value, 6) >> 10;
+			d_tm_set_counter(bdh->bdh_media_wear_raw,
+					dev_state->media_wear_raw);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_HOST_READ_PERCENTAGE) {
+			atb = isp->attributes[i];
+			dev_state->host_reads_raw =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_host_reads_raw,
+					dev_state->host_reads_raw);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_TIMER) {
+			atb = isp->attributes[i];
+			dev_state->workload_timer_raw =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_workload_timer_raw,
+					dev_state->workload_timer_raw);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_THERMAL_THROTTLE_STATUS) {
+			atb = isp->attributes[i];
+			dev_state->thermal_throttle_status = atb.raw_value[0];
+			d_tm_set_counter(bdh->bdh_thermal_throttle_status,
+					 dev_state->thermal_throttle_status);
+			dev_state->thermal_throttle_event_cnt =
+					extend_to_uint64(&atb.raw_value[1], 4);
+			d_tm_set_counter(bdh->bdh_thermal_throttle_event_cnt,
+					 dev_state->thermal_throttle_event_cnt);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_RETRY_BUFFER_OVERFLOW_COUNTER) {
+			atb = isp->attributes[i];
+			dev_state->retry_buffer_overflow_cnt =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_retry_buffer_overflow_cnt,
+					 dev_state->retry_buffer_overflow_cnt);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_PLL_LOCK_LOSS_COUNT) {
+			atb = isp->attributes[i];
+			dev_state->pll_lock_loss_cnt =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_pll_lock_loss_cnt,
+					 dev_state->pll_lock_loss_cnt);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_NAND_BYTES_WRITTEN) {
+			atb = isp->attributes[i];
+			dev_state->nand_bytes_written =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_nand_bytes_written,
+					 dev_state->nand_bytes_written);
+		}
+		if (isp->attributes[i].code ==
+				SPDK_NVME_INTEL_SMART_HOST_BYTES_WRITTEN) {
+			atb = isp->attributes[i];
+			dev_state->host_bytes_written =
+					extend_to_uint64(atb.raw_value, 6);
+			d_tm_set_counter(bdh->bdh_host_bytes_written,
+					 dev_state->host_bytes_written);
+		}
+	}
+}
+
 static void
 populate_health_stats(struct bio_dev_health *bdh)
 {
@@ -345,8 +502,8 @@ populate_health_stats(struct bio_dev_health *bdh)
 }
 
 static void
-get_spdk_log_page_completion(struct spdk_bdev_io *bdev_io, bool success,
-			     void *cb_arg)
+get_spdk_intel_smart_log_completion(struct spdk_bdev_io *bdev_io, bool success,
+				    void *cb_arg)
 {
 	struct bio_xs_context	*ctxt = cb_arg;
 	struct bio_dev_health	*dev_health = xs_ctxt2dev_health(ctxt);
@@ -375,7 +532,7 @@ get_spdk_log_page_completion(struct spdk_bdev_io *bdev_io, bool success,
 
 	/* Store device health info in in-memory health state log. */
 	dev_health->bdh_health_state.timestamp = dev_health->bdh_stat_age;
-	populate_health_stats(dev_health);
+	populate_intel_smart_stats(dev_health);
 
 	/* Prep NVMe command to get controller data */
 	cp_sz = sizeof(struct spdk_nvme_ctrlr_data);
@@ -396,6 +553,73 @@ get_spdk_log_page_completion(struct spdk_bdev_io *bdev_io, bool success,
 					   ctxt);
 	if (rc) {
 		D_ERROR("NVMe admin passthru (identify ctrlr), rc:%d\n", rc);
+		dev_health->bdh_inflights--;
+	}
+
+out:
+	/* Free I/O request in the completion callback */
+	spdk_bdev_free_io(bdev_io);
+}
+
+static void
+get_spdk_health_info_completion(struct spdk_bdev_io *bdev_io, bool success,
+			     void *cb_arg)
+{
+	struct bio_xs_context	*ctxt = cb_arg;
+	struct bio_dev_health	*dev_health = xs_ctxt2dev_health(ctxt);
+	struct spdk_bdev	*bdev;
+	struct spdk_nvme_cmd	 cmd;
+	uint32_t		 page_sz;
+	uint32_t		 numd, numdl, numdu;
+	int			 rc, sc, sct;
+	uint32_t		 cdw0;
+
+	if (dev_health == NULL)
+		goto out;
+
+	D_ASSERT(dev_health->bdh_inflights == 1);
+
+	/* Additional NVMe status information */
+	spdk_bdev_io_get_nvme_status(bdev_io, &cdw0, &sct, &sc);
+	if (sc) {
+		D_ERROR("NVMe status code/type: %d/%d\n", sc, sct);
+		dev_health->bdh_inflights--;
+		goto out;
+	}
+
+	D_ASSERT(dev_health->bdh_io_channel != NULL);
+	bdev = spdk_bdev_desc_get_bdev(dev_health->bdh_desc);
+	D_ASSERT(bdev != NULL);
+
+	/* Store device health info in in-memory health state log. */
+	dev_health->bdh_health_state.timestamp = dev_health->bdh_stat_age;
+	populate_health_stats(dev_health);
+
+	/* Prep NVMe command to get SPDK Intel NVMe SSD Smart Attributes */
+	page_sz = sizeof(struct spdk_nvme_intel_smart_information_page);
+	numd = page_sz / sizeof(uint32_t) - 1u;
+	numdl = numd & 0xFFFFu;
+	numdu = (numd >> 16) & 0xFFFFu;
+	memset(&cmd, 0, sizeof(cmd));
+	cmd.opc = SPDK_NVME_OPC_GET_LOG_PAGE;
+	cmd.nsid = SPDK_NVME_GLOBAL_NS_TAG;
+	cmd.cdw10 = numdl << 16;
+	cmd.cdw10 |= SPDK_NVME_INTEL_LOG_SMART;
+	cmd.cdw11 = numdu;
+
+	/*
+	 * Submit an NVMe Admin command to get NVMe vendor unique smart
+	 * attributes.
+	 */
+	rc = spdk_bdev_nvme_admin_passthru(dev_health->bdh_desc,
+					   dev_health->bdh_io_channel,
+					   &cmd,
+					   dev_health->bdh_intel_smart_buf,
+					   page_sz,
+					   get_spdk_intel_smart_log_completion,
+					   ctxt);
+	if (rc) {
+		D_ERROR("NVMe admin passthru (Intel smart log), rc:%d\n", rc);
 		dev_health->bdh_inflights--;
 	}
 
@@ -441,7 +665,7 @@ collect_raw_health_data(struct bio_xs_context *ctxt)
 	struct spdk_bdev	*bdev;
 	struct spdk_nvme_cmd	 cmd;
 	uint32_t		 numd, numdl, numdu;
-	uint32_t		 health_page_sz;
+	uint32_t		 page_sz;
 	int			 rc;
 
 	D_ASSERT(dev_health != NULL);
@@ -470,8 +694,8 @@ collect_raw_health_data(struct bio_xs_context *ctxt)
 	dev_health->bdh_inflights++;
 
 	/* Prep NVMe command to get SPDK device health data */
-	health_page_sz = sizeof(struct spdk_nvme_health_information_page);
-	numd = health_page_sz / sizeof(uint32_t) - 1u;
+	page_sz = sizeof(struct spdk_nvme_health_information_page);
+	numd = page_sz / sizeof(uint32_t) - 1u;
 	numdl = numd & 0xFFFFu;
 	numdu = (numd >> 16) & 0xFFFFu;
 	memset(&cmd, 0, sizeof(cmd));
@@ -489,13 +713,12 @@ collect_raw_health_data(struct bio_xs_context *ctxt)
 					   dev_health->bdh_io_channel,
 					   &cmd,
 					   dev_health->bdh_health_buf,
-					   health_page_sz,
-					   get_spdk_log_page_completion,
+					   page_sz,
+					   get_spdk_health_info_completion,
 					   ctxt);
-	if (rc) {
+	if (rc)
 		D_ERROR("NVMe admin passthru (health log), rc:%d\n", rc);
-		dev_health->bdh_inflights--;
-	}
+
 }
 
 void
@@ -555,6 +778,10 @@ bio_fini_health_monitoring(struct bio_blobstore *bb)
 		spdk_dma_free(bdh->bdh_error_buf);
 		bdh->bdh_error_buf = NULL;
 	}
+	if (bdh->bdh_intel_smart_buf) {
+		spdk_dma_free(bdh->bdh_intel_smart_buf);
+		bdh->bdh_intel_smart_buf = NULL;
+	}
 
 	/* Release I/O channel reference */
 	if (bdh->bdh_io_channel) {
@@ -581,6 +808,7 @@ bio_init_health_monitoring(struct bio_blobstore *bb, char *bdev_name)
 	uint32_t			 cp_sz;
 	uint32_t			 ep_sz;
 	uint32_t			 ep_buf_sz;
+	uint32_t			 isp_sz;
 	struct bio_dev_info		*binfo;
 	int				 rc;
 
@@ -607,6 +835,14 @@ bio_init_health_monitoring(struct bio_blobstore *bb, char *bdev_name)
 		goto free_ctrlr_buf;
 	}
 
+	isp_sz = sizeof(struct spdk_nvme_intel_smart_information_page);
+	bb->bb_dev_health.bdh_intel_smart_buf = spdk_dma_zmalloc(isp_sz, 0,
+								 NULL);
+	if (bb->bb_dev_health.bdh_intel_smart_buf == NULL) {
+		rc = -DER_NOMEM;
+		goto free_error_buf;
+	}
+
 	bb->bb_dev_health.bdh_inflights = 0;
 
 	if (bb->bb_state == BIO_BS_STATE_OUT)
@@ -618,7 +854,7 @@ bio_init_health_monitoring(struct bio_blobstore *bb, char *bdev_name)
 	if (rc != 0) {
 		D_ERROR("Failed to open bdev %s, %d\n", bdev_name, rc);
 		rc = daos_errno2der(-rc);
-		goto free_error_buf;
+		goto free_smart_buf;
 	}
 
 	/* Get and hold I/O channel for device health monitoring */
@@ -658,6 +894,9 @@ bio_init_health_monitoring(struct bio_blobstore *bb, char *bdev_name)
 
 	return 0;
 
+free_smart_buf:
+	spdk_dma_free(bb->bb_dev_health.bdh_intel_smart_buf);
+	bb->bb_dev_health.bdh_intel_smart_buf = NULL;
 free_error_buf:
 	spdk_dma_free(bb->bb_dev_health.bdh_error_buf);
 	bb->bb_dev_health.bdh_error_buf = NULL;

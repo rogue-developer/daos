@@ -7,6 +7,7 @@
 #include <spdk/stdinc.h>
 #include <spdk/nvme.h>
 #include <spdk/env.h>
+#include <spdk/nvme_intel.h>
 
 #include "nvme_control.h"
 #include "nvme_control_common.h"
@@ -37,8 +38,8 @@ get_spdk_log_page_completion(void *cb_arg, const struct spdk_nvme_cpl *cpl)
 static int
 get_health_logs(struct spdk_nvme_ctrlr *ctrlr, struct health_entry *health)
 {
-	struct spdk_nvme_health_information_page hp;
-	int					 rc = 0;
+	struct spdk_nvme_health_information_page	hp;
+	int						rc = 0;
 
 	/** NVMe SSDs on GCP do not support this */
 	if (!spdk_nvme_ctrlr_is_log_page_supported(ctrlr,
