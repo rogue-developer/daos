@@ -13,6 +13,7 @@
 // To use a test branch (i.e. PR) until it lands to master
 // I.e. for testing library changes
 //@Library(value="pipeline-lib@your_branch") _
+@Library(value="pipeline-lib@corci-1074b") _
 
 // For master, this is just some wildly high number
 next_version = "1000"
@@ -74,6 +75,84 @@ pipeline {
         string(name: 'TestTag',
                defaultValue: "",
                description: 'Test-tag to use for this run (i.e. pr, daily_regression, full_regression, etc.)')
+        booleanParam(name: 'CI_NOBUILD',
+                     defaultValue: false,
+                     description: 'Do not build daos.  Use for PR and special branches only')
+        string(name: 'CI_RPM_TEST_VERSION',
+               defaultValue: '1.3.101-1',
+               description: 'Prebuilt RPMs to use instead of building DAOS. (Special CI use)')
+        booleanParam(name: 'CI_ALLOW_UNSTABLE_TEST',
+                     defaultValue: false,
+                     description: 'Continue testing if a previous stage is Unstable')
+        booleanParam(name: 'CI_UNIT_TEST',
+                     defaultValue: true,
+                     description: 'Run the Unit CentOS 7 CI tests')
+        booleanParam(name: 'CI_UNIT_TEST_MEMCHECK',
+                     defaultValue: true,
+                     description: 'Run the Unit Memcheck CentOS 7 CI tests')
+        booleanParam(name: 'CI_FUNCTIONAL_el7_TEST',
+                     defaultValue: true,
+                     description: 'Run the functional CentOS 7 CI tests')
+        booleanParam(name: 'CI_FUNCTIONAL_el8_TEST',
+                     defaultValue: true,
+                     description: 'Run the functional CentOS 8 CI tests')
+        booleanParam(name: 'CI_FUNCTIONAL_leap15_TEST',
+                     defaultValue: true,
+                     description: 'Run the functional OpenSUSE Leap 15 CI tests')
+        booleanParam(name: 'CI_FUNCTIONAL_ubuntu20_TEST',
+                     defaultValue: false,
+                     description: 'Run the functional Ubuntu 20 CI tests')
+        booleanParam(name: 'CI_RPMS_el7_TEST',
+                     defaultValue: true,
+                     description: 'Run the CentOS 7 RPM CI tests')
+        booleanParam(name: 'CI_SCAN_RPMS_el7_TEST',
+                     defaultValue: true,
+                     description: 'Run the Malware Scan for CentOS 7 RPM CI tests')
+        booleanParam(name: 'CI_small_TEST',
+                     defaultValue: true,
+                     description: 'Run the Small Cluster CI tests')
+        booleanParam(name: 'CI_medium_TEST',
+                     defaultValue: false,
+                     description: 'Run the Medium Cluster CI tests')
+        booleanParam(name: 'CI_large_TEST',
+                     defaultValue: false,
+                     description: 'Run the Large Cluster CI tests')
+        string(name: 'CI_UNIT_VM1_LABEL',
+               defaultValue: 'ci_vm1',
+               description: 'Label to use for 1 VM node unit and RPM tests')
+        string(name: 'CI_FUNCTIONAL_VM9_LABEL',
+               defaultValue: 'ci_vm9',
+               description: 'Label to use for 9 VM functional tests')
+        string(name: 'CI_NLT_1_LABEL',
+               defaultValue: 'ci_nlt_1',
+               description: "Label to use for NLT tests")
+        string(name: 'CI_NVME_3_LABEL',
+               defaultValue: 'ci_nvme3',
+               description: 'Label to use for 3 node NVMe tests')
+        string(name: 'CI_NVME_5_LABEL',
+               defaultValue: 'ci_nvme5',
+               description: 'Label to use for 5 node NVMe tests')
+        string(name: 'CI_NVME_9_LABEL',
+               defaultValue: 'ci_nvme9',
+               description: 'Label to use for 9 node NVMe tests')
+        string(name: 'CI_STORAGE_PREP_LABEL',
+               defaultValue: '',
+               description: 'Label for cluster to do a DAOS Storage Preparation')
+        string(name: 'CI_HARDWARE_DISTRO',
+               defaultValue: 'centos7',
+               description: 'Distribution to use for CI Hardware Tests')
+        string(name: 'CI_CENTOS7_TARGET',
+               defaultValue: 'centos7',
+               description: 'Image to used for Centos 7 CI tests')
+        string(name: 'CI_CENTOS8_TARGET',
+               defaultValue: 'centos8',
+               description: 'Image to used for Centos 8 CI tests')
+        string(name: 'CI_LEAP15_TARGET',
+               defaultValue: 'leap15',
+               description: 'Image to use for OpenSUSE Leap CI tests')
+        string(name: 'CI_UBUNTU20.04_TARGET',
+               defaultValue: 'ubuntu20.04',
+               description: 'Image to used for Ubuntu 20 CI tests')
     }
 
     stages {
@@ -583,7 +662,7 @@ pipeline {
                       expression { ! skipStage() }
                     }
                     agent {
-                        label 'ci_vm1'
+                        label params.CI_UNIT_VM1_LABEL
                     }
                     steps {
                         unitTest timeout_time: 60,
@@ -602,7 +681,7 @@ pipeline {
                       expression { ! skipStage() }
                     }
                     agent {
-                        label 'ci_nlt_1'
+                        label params.CI_NLT_1_LABEL
                     }
                     steps {
                         unitTest timeout_time: 45,
@@ -641,7 +720,7 @@ pipeline {
                       expression { ! skipStage() }
                     }
                     agent {
-                        label 'ci_vm1'
+                        label params.CI_UNIT_VM1_LABEL
                     }
                     steps {
                         unitTest timeout_time: 60,
@@ -667,7 +746,7 @@ pipeline {
                       expression { ! skipStage() }
                     }
                     agent {
-                        label 'ci_vm1'
+                        label params.CI_UNIT_VM1_LABEL
                     }
                     steps {
                         unitTest timeout_time: 30,
@@ -727,7 +806,7 @@ pipeline {
                         expression { ! skipStage() }
                     }
                     agent {
-                        label 'ci_vm9'
+                        label params.CI_FUNCTIONAL_VM9_LABEL
                     }
                     steps {
                         functionalTest inst_repos: daosRepos(),
@@ -765,7 +844,7 @@ pipeline {
                         expression { ! skipStage() }
                     }
                     agent {
-                        label 'ci_vm9'
+                        label params.CI_FUNCTIONAL_VM9_LABEL
                     }
                     steps {
                         functionalTest inst_repos: daosRepos(),
@@ -784,7 +863,7 @@ pipeline {
                         expression { ! skipStage() }
                     }
                     agent {
-                        label 'ci_vm9'
+                        label params.CI_FUNCTIONAL_VM9_LABEL
                     }
                     steps {
                         functionalTest inst_repos: daosRepos(),
@@ -803,7 +882,7 @@ pipeline {
                         expression { ! skipStage() }
                     }
                     agent {
-                        label 'ci_vm1'
+                        label params.CI_UNIT_VM1_LABEL
                     }
                     steps {
                         testRpm inst_repos: daosRepos(),
@@ -813,13 +892,10 @@ pipeline {
                 stage('Scan CentOS 7 RPMs') {
                     when {
                         beforeAgent true
-                        expression { ! (target_branch == 'weekly-testing' ||
-                                        skipStage(stage: 'scan-centos-rpms',
-                                                  def_val: 'false') ||
-                                        quickFunctional()) }
+                        expression { ! skipStage() }
                     }
                     agent {
-                        label 'ci_vm1'
+                        label params.CI_UNIT_VM1_LABEL
                     }
                     steps {
                         scanRpms inst_repos: daosRepos(),
@@ -836,6 +912,19 @@ pipeline {
                 } // stage('Scan CentOS 7 RPMs')
             } // parallel
         } // stage('Test')
+        stage('Test Storage Prep') {
+            when {
+                beforeAgent true
+                expression { params.CI_STORAGE_PREP_LABEL != '' }
+            }
+            agent {
+                label params.CI_STORAGE_PREP_LABEL
+            }
+            steps {
+                storagePrepTest inst_repos: daosRepos(),
+                                inst_rpms: functionalPackages(1, next_version)
+            }
+        } // stage('Test Storage Prep')
         stage('Test Hardware') {
             when {
                 beforeAgent true
@@ -849,7 +938,7 @@ pipeline {
                     }
                     agent {
                         // 2 node cluster with 1 IB/node + 1 test control node
-                        label 'ci_nvme3'
+                        label params.CI_NVME_3_LABEL
                     }
                     steps {
                         functionalTest inst_repos: daosRepos(),
@@ -869,7 +958,7 @@ pipeline {
                     }
                     agent {
                         // 4 node cluster with 2 IB/node + 1 test control node
-                        label 'ci_nvme5'
+                        label params.CI_NVME_5_LABEL
                     }
                     steps {
                         functionalTest target: hwDistroTarget(),
@@ -890,7 +979,7 @@ pipeline {
                     }
                     agent {
                         // 8+ node cluster with 1 IB/node + 1 test control node
-                        label 'ci_nvme9'
+                        label params.CI_NVME_9_LABEL
                     }
                     steps {
                         functionalTest target: hwDistroTarget(),
