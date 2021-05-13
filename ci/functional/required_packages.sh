@@ -6,7 +6,7 @@ distro="$1"
 client_ver="$2"
 
 pkgs="openmpi3 hwloc ndctl fio                \
-      patchutils ior-hpc-daos-${client_ver}   \
+      patchutils ior                          \
       romio-tests-daos-${client_ver}          \
       testmpio                                \
       mpi4py-tests                            \
@@ -19,7 +19,8 @@ pkgs="openmpi3 hwloc ndctl fio                \
       mpifileutils-mpich-daos-${client_ver}"
 
 if [[ $distro = el8* ]] || [[ $distro = centos8* ]]; then
-    pkgs="openmpi hwloc ndctl fio patchutils"
+    pkgs="openmpi hwloc ndctl fio \
+          patchutils ior"
 fi
 
 if [[ $distro = el7* ]] || [[ $distro = centos7* ]]; then
