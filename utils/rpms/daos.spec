@@ -234,6 +234,7 @@ This is the package needed to run the DAOS test suite
 %if (0%{?suse_version} >= 1500)
 Requires: %{name}-client%{?_isa} = %{version}-%{release}
 %endif
+Requires: libuuid-devel
 Summary: The DAOS development libraries and headers
 
 %description devel
