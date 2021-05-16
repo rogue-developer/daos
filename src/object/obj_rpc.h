@@ -160,6 +160,8 @@ enum obj_rpc_flags {
 	ORF_FOR_MIGRATION	= (1 << 14),
 	/* Force DTX refresh if hit non-committed DTX on non-leader. */
 	ORF_DTX_REFRESH		= (1 << 15),
+	/* Internal transaction. */
+	ORF_DTX_INTERNAL	= (1 << 16),
 };
 
 /* common for update/fetch */

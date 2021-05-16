@@ -4462,6 +4462,18 @@ ds_obj_cpd_handler(crt_rpc_t *rpc)
 		DP_UUID(oci->oci_pool_uuid), DP_UUID(oci->oci_co_hdl),
 		DP_UUID(oci->oci_co_uuid), tx_count, oci->oci_flags);
 
+	if (oci->oci_flags & ORF_DTX_INTERNAL) {
+		struct daos_cpd_sub_head	*dcsh;
+
+		dcsh = ds_obj_cpd_get_dcsh(rpc, 0);
+		D_ERROR("Received internal TX RPC %p for "DF_DTI
+			" on %s against "DF_UUID"/"DF_UUID"/"DF_UUID
+			" with flags %u\n", rpc, DP_DTI(&dcsh->dcsh_xid),
+			leader ? "leader" : "non-leader",
+			DP_UUID(oci->oci_pool_uuid), DP_UUID(oci->oci_co_hdl),
+			DP_UUID(oci->oci_co_uuid), oci->oci_flags);
+	}
+
 	rc = do_obj_ioc_begin(oci->oci_map_ver, oci->oci_pool_uuid,
 			      oci->oci_co_hdl, oci->oci_co_uuid,
 			      opc_get(rpc->cr_opc), &ioc);
