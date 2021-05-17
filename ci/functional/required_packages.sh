@@ -19,8 +19,13 @@ pkgs="openmpi3 hwloc ndctl fio                \
       mpifileutils-mpich-daos-${client_ver}"
 
 if [[ $distro = el8* ]] || [[ $distro = centos8* ]]; then
-    pkgs="openmpi hwloc ndctl fio \
-          patchutils ior"
+    pkgs="openmpi hwloc ndctl fio      \
+          patchutils ior               \
+          hdf5-mpich-tests             \
+          hdf5-openmpi3-tests          \
+          hdf5-vol-daos-mpich-tests    \
+          hdf5-vol-daos-openmpi3-tests \
+          mpifileutils-mpich"
 fi
 
 if [[ $distro = el7* ]] || [[ $distro = centos7* ]]; then
