@@ -22,7 +22,7 @@ if [[ $distro = el8* ]] || [[ $distro = centos8* ]]; then
     pkgs="openmpi hwloc ndctl fio      \
           patchutils ior               \
           hdf5-mpich-tests             \
-          hdf5-openmpi3-tests          \
+          hdf5-openmpi-tests           \
           hdf5-vol-daos-mpich-tests    \
           hdf5-vol-daos-openmpi3-tests \
           mpifileutils-mpich"
