@@ -7,6 +7,7 @@ def scons():
     SConscript('kv/SConscript')
     SConscript('api/SConscript')
     SConscript('dfs/SConscript')
+    SConscript('serialize/SConscript')
     SConscript('dfuse/SConscript')
     SConscript('pydaos/SConscript')
 
