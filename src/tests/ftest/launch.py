@@ -550,7 +550,9 @@ def get_test_list(tags):
         if not test_list:
             test_list = ["./"]
         version = float(get_output(["avocado", "-v"]).split()[-1])
-        if version >= 82.0:
+        if version >= 85.0:
+            command = ["avocado", "list"]
+        elif version >= 82.0:
             command = ["avocado", "--paginator=off", "list"]
         else:
             command = ["avocado", "list", "--paginator=off"]
