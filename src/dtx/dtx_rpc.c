@@ -178,6 +178,34 @@ dtx_req_cb(const struct crt_cb_info *cb_info)
 			D_FREE(dsp);
 			D_GOTO(out, rc = -DER_DATA_LOSS);
 		case -DER_NONEXIST:
+			if (dtx_hlc_age2sec(dsp->dsp_epoch) >
+			    DTX_AGG_THRESHOLD_AGE_LOWER ||
+			    DAOS_FAIL_CHECK(DAOS_DTX_UNCERTAIN)) {
+
+				/* Related DTX entry on leader does not exit.
+				 * We do not know whether it has been aborted
+				 * or committed (then aggregated). Then has to
+				 * mark it as 'orphan' that will be handled via
+				 * some special DAOS tools in the future.
+				 */
+
+				rc = vos_dtx_set_flags(dra->dra_cont->sc_hdl,
+						       &dsp->dsp_xid, 1,
+						       DTE_ORPHAN);
+
+				D_ERROR("Hit uncertain leaked DTX "DF_DTI
+					", mark it as orphan: "DF_RC"\n",
+					DP_DTI(&dsp->dsp_xid), DP_RC(rc));
+
+				if (rc == -DER_NONEXIST)
+					rc = 0;
+				else
+					rc = -DER_TX_UNCERTAIN;
+
+				D_FREE(dsp);
+				break;
+			}
+
 			/* The leader does not have related DTX info,
 			 * we may miss related DTX abort request, so
 			 * let's abort it locally.

@@ -134,8 +134,12 @@ dtx_handler(crt_rpc_t *rpc)
 				count = din->di_dtx_array.ca_count - i;
 
 			dtis = (struct dtx_id *)din->di_dtx_array.ca_arrays + i;
-			rc1 = vos_dtx_abort(cont->sc_hdl, din->di_epoch,
-					    dtis, count);
+			if (din->di_epoch != 0)
+				rc1 = vos_dtx_abort(cont->sc_hdl, din->di_epoch,
+						    dtis, count);
+			else
+				rc1 = vos_dtx_set_flags(cont->sc_hdl, dtis,
+							count, DTE_CORRUPTED);
 			if (rc == 0 && rc1 < 0)
 				rc = rc1;
 
@@ -154,6 +158,9 @@ dtx_handler(crt_rpc_t *rpc)
 
 		break;
 	case DTX_REFRESH:
+		if (DAOS_FAIL_CHECK(DAOS_DTX_UNCERTAIN))
+			D_GOTO(out, rc = -DER_NONEXIST);
+
 		count = din->di_dtx_array.ca_count;
 		if (count == 0)
 			D_GOTO(out, rc = 0);
