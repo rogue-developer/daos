@@ -99,5 +99,8 @@ post_provision_config_nodes() {
     fi
     cat /etc/os-release
 
+    rpm -qf /usr/bin/fusermount3 || true
+    ls -l /usr/bin/fusermount3 || true
+
     exit 0
 }
