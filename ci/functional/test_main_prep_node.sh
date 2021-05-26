@@ -7,13 +7,19 @@ for i in 0 1; do
         if ! ifconfig ib$i | grep "inet "; then
           {
             echo "Found interface ib$i down after reboot on $HOSTNAME"
-            systemctl status
-            systemctl --failed
-            journalctl -n 500
-            ifconfig ib$i
-            cat /sys/class/net/ib$i/mode
-            ifup ib$i
-          } | mail -s "Interface found down after reboot" "$OPERATIONS_EMAIL"
+            systemctl status || true
+            systemctl --failed || true
+            journalctl -n 500 || true
+            ifconfig ib$i || true
+            cat /sys/class/net/ib$i/mode || true
+            ifup ib$i || true
+            ifconfig -a || true
+            cat /etc/sysconfig/network-scripts/ifcfg-ib$1
+            if ! ifconfig ib$i | grep "inet "; then
+                echo "Failed to bring up interface"
+                exit 1
+            fi
+          } # | mail -s "Interface found down after reboot" "$OPERATIONS_EMAIL"
         fi
     fi
 done
