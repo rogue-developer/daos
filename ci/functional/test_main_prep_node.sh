@@ -10,12 +10,12 @@ for i in 0 1; do
             systemctl status || true
             systemctl --failed || true
             journalctl -n 500 || true
-            ifconfig ib$i || true
+            ifconfig ib"$i" || true
             cat /sys/class/net/ib$i/mode || true
-            ifup ib$i || true
+            ifup ib"$i" || true
             ifconfig -a || true
-            cat /etc/sysconfig/network-scripts/ifcfg-ib$1
-            if ! ifconfig ib$i | grep "inet "; then
+            cat /etc/sysconfig/network-scripts/ifcfg-ib"$i"
+            if ! ifconfig ib"$i" | grep "inet "; then
                 echo "Failed to bring up interface"
                 exit 1
             fi
