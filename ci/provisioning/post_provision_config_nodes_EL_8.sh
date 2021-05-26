@@ -27,6 +27,10 @@ distro_custom() {
     if ! rpm -q nfs-utils; then
         dnf -y install nfs-utils
     fi
+
+    if ! rpm -q network-scripts; then
+        dnf -y install network-scripts
+    fi
 }
 
 post_provision_config_nodes() {
@@ -98,9 +102,6 @@ post_provision_config_nodes() {
         cat /etc/do-release
     fi
     cat /etc/os-release
-
-    rpm -qf /usr/bin/fusermount3 || true
-    ls -l /usr/bin/fusermount3 || true
 
     exit 0
 }
