@@ -20,7 +20,7 @@ for i in 0 1; do
                 echo "Failed to bring up interface $iface.  Please file a CORCI ticket."
                 exit 1
             fi
-          } | mail -s "Interface $iface found down after reboot" "$OPERATIONS_EMAIL"
+          } # | mail -s "Interface $iface found down after reboot" "$OPERATIONS_EMAIL"
         fi
     fi
 done
