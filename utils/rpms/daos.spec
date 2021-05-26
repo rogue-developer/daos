@@ -14,7 +14,7 @@
 
 Name:          daos
 Version:       1.3.101
-Release:       2%{?relval}%{?dist}
+Release:       3%{?relval}%{?dist}
 Summary:       DAOS Storage Engine
 
 License:       BSD-2-Clause-Patent
@@ -85,12 +85,13 @@ BuildRequires: libisal-devel
 BuildRequires: libisal_crypto-devel
 %endif
 BuildRequires: daos-raft-devel >= 0.7.3
-BuildRequires: openssl-devel
+BuildRequires: libcmocka-devel
 BuildRequires: libevent-devel
 BuildRequires: libyaml-devel
-BuildRequires: libcmocka-devel
-BuildRequires: valgrind-devel
+BuildRequires: openssl-devel
 BuildRequires: systemd
+BuildRequires: tbb-devel
+BuildRequires: valgrind-devel
 %if (0%{?rhel} >= 7)
 BuildRequires: numactl-devel
 BuildRequires: CUnit-devel
