@@ -464,6 +464,9 @@ getent passwd daos_agent >/dev/null || useradd -s /sbin/nologin -r -g daos_agent
 %attr(4750,root,daos_server) %{_bindir}/daos_firmware
 
 %changelog
+* Thu May 27 2021 Dmitry Eremin <dmitry.eremin@intel.com> 1.3.0-101-3
+- Replace memory allocator for engine with tbbmalloc
+
 * Thu May 20 2021 Jeff Olivier <jeffrey.v.olivier@intel.com> 1.3.0-101-2
 - Remove client libs from common package
 

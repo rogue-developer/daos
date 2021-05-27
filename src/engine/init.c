@@ -496,6 +496,9 @@ dss_crt_hlc_error_cb(void *arg)
 static void
 server_id_cb(uint32_t *tid, uint64_t *uid)
 {
+	if (server_init_state != DSS_INIT_STATE_SET_UP)
+		return;
+
 	if (uid != NULL)
 		ABT_self_get_thread_id(uid);
 
