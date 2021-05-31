@@ -1,4 +1,4 @@
-.TH dmg 1 "17 May 2021"
+.TH dmg 1 "28 May 2021"
 .SH NAME
 dmg \- Administrative tool for managing DAOS clusters
 .SH SYNOPSIS
@@ -139,6 +139,9 @@ Per-server NVMe allocation for DAOS pool (manual)
 .TP
 \fB\fB\-r\fR, \fB\-\-ranks\fR\fP
 Storage server unique identifiers (ranks) for DAOS pool
+.TP
+\fB\fB\-P\fR, \fB\-\-policy\fR <default: \fI"io_size"\fR>\fP
+Pool tiering policy
 .SS pool delete-acl
 Delete an entry from a DAOS pool's Access Control List
 
