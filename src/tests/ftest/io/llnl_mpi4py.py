@@ -6,6 +6,7 @@
 """
 
 from mpio_test_base import MpiioTests
+from distutils.sysconfig import get_python_lib
 
 
 # pylint: disable=too-many-ancestors
@@ -49,5 +50,6 @@ class LlnlMpi4py(MpiioTests):
         :avocado: tags=large
         :avocado: tags=mpiio,mpich,mpi4py
         """
-        test_repo = self.params.get("mpi4py", '/run/test_repo/')
+        test_repo = self.params.get("mpi4py", '/run/test_repo/').replace(
+            "@python-site-packages@", get_python_lib())
         self.run_test(test_repo, "mpi4py")
