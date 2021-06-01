@@ -29,7 +29,7 @@ if [[ $distro = el8* ]] || [[ $distro = centos8* ]]; then
           hdf5-vol-daos-mpich-tests   \
           hdf5-vol-daos-openmpi-tests \
           MACSio-mpich                \
-          MACSio-openmpi3             \
+          MACSio-openmpi             \
           mpifileutils-mpich"
 fi
 
