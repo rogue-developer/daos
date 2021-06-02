@@ -3939,7 +3939,7 @@ dfs_punch(dfs_t *dfs, dfs_obj_t *obj, daos_off_t offset, daos_size_t len)
 
 	/** Punch offset -> len */
 	iod.arr_nr = 1;
-	rg.rg_len = offset + len;
+	rg.rg_len = len;
 	rg.rg_idx = offset;
 	iod.arr_rgs = &rg;
 

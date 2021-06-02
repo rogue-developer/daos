@@ -1955,7 +1955,7 @@ obj_shard_query_key_cb(tse_task_t *task, void *data)
 			cb_args->dkey->iov_len = okqo->okqo_dkey.iov_len;
 			changed = true;
 		} else if (flags & DAOS_GET_MAX) {
-			if (*val > *cur) {
+			if (*val >= *cur) {
 				*cur = *val;
 				/** set to change akey and recx */
 				changed = true;
