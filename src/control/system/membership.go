@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -470,7 +471,7 @@ func (m *Membership) CheckHosts(hosts string, ctlPort int) (*RankSet, *hostlist.
 
 // MarkRankDead is a helper method to mark a rank as dead in response to a
 // swim_rank_dead event.
-func (m *Membership) MarkRankDead(rank Rank) error {
+func (m *Membership) MarkRankDead(rank Rank, timestamp time.Time) error {
 	member, err := m.db.FindMemberByRank(rank)
 	if err != nil {
 		return err
@@ -488,6 +489,17 @@ func (m *Membership) MarkRankDead(rank Rank) error {
 		return errors.New(msg)
 	}
 
+	// Not entirely sure this is correct. We clearly don't want to allow an old
+	// SWIM event to take a newly-joined rank back out of service, but maybe we
+	// should ignore all SWIM events from before the last member update? That
+	// change would probably break some behavior that depends on a stopped rank
+	// eventually transitioning to the Excluded state, so let's try this for now.
+	if member.State() == MemberStateJoined && member.LastUpdate.After(timestamp) {
+		m.log.Debugf("ignoring rank dead event for %d (stale event)", rank)
+		return errors.Errorf("event occurred %s before member (re-)joined", member.LastUpdate.Sub(timestamp))
+	}
+
+	m.log.Infof("marking rank %d as %s in response to rank dead event", rank, ns)
 	member.state = ns
 	return m.db.UpdateMember(member)
 }

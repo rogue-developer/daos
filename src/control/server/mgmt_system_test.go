@@ -448,7 +448,10 @@ func checkMembers(t *testing.T, exp system.Members, ms *system.Membership) {
 			t.Fatalf("unexpected member state for rank %d (-want, +got)\n%s\n", em.Rank, diff)
 		}
 
-		cmpOpts := []cmp.Option{cmpopts.IgnoreUnexported(system.Member{})}
+		cmpOpts := []cmp.Option{
+			cmpopts.IgnoreUnexported(system.Member{}),
+			cmpopts.EquateApproxTime(time.Second),
+		}
 		if diff := cmp.Diff(em, am, cmpOpts...); diff != "" {
 			t.Fatalf("unexpected members (-want, +got)\n%s\n", diff)
 		}
@@ -829,7 +832,10 @@ func TestServer_MgmtSvc_rpcFanout(t *testing.T) {
 				return
 			}
 
-			cmpOpts := []cmp.Option{cmpopts.IgnoreUnexported(system.MemberResult{}, system.Member{})}
+			cmpOpts := []cmp.Option{
+				cmpopts.IgnoreUnexported(system.MemberResult{}, system.Member{}),
+				cmpopts.EquateApproxTime(time.Second),
+			}
 			if diff := cmp.Diff(tc.expResults, gotResp.Results, cmpOpts...); diff != "" {
 				t.Logf("unexpected results (-want, +got)\n%s\n", diff) // prints on err
 			}
