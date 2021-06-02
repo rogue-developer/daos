@@ -19,5 +19,5 @@ container:
 client_processes:
     np: 8
 test_repo:
-    llnl: "/usr/lib64/testmpio"
-    mpi4py: "@python-site-packages@/mpi4py/tests"
+    llnl: "/usr/lib64/mpich/testmpio"
+    mpi4py: "/usr/lib64/python3.6/site-packages/mpi4py/tests"

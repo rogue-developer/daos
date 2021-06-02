@@ -50,6 +50,5 @@ class LlnlMpi4py(MpiioTests):
         :avocado: tags=large
         :avocado: tags=mpiio,mpich,mpi4py
         """
-        test_repo = self.params.get("mpi4py", '/run/test_repo/').replace(
-            "@python-site-packages@", get_python_lib())
+        test_repo = self.params.get("mpi4py", '/run/test_repo/')
         self.run_test(test_repo, "mpi4py")
