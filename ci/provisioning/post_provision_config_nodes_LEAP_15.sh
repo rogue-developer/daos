@@ -104,5 +104,8 @@ post_provision_config_nodes() {
     fi
     cat /etc/os-release
 
+    rpm -qi mpi4py-tests || true
+    rpm -ql mpi4py-tests || true
+
     exit 0
 }

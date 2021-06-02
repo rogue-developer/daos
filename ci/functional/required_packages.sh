@@ -5,17 +5,17 @@ set -eux
 distro="$1"
 client_ver="$2"
 
-pkgs="openmpi3 hwloc ndctl fio               \
-      patchutils ior                         \
-      romio-tests                            \
-      testmpio                               \
-      mpi4py-tests                           \
-      hdf5-mpich-tests                       \
-      hdf5-openmpi3-tests                    \
-      hdf5-vol-daos-mpich-tests              \
-      hdf5-vol-daos-openmpi3-tests           \
-      MACSio-mpich                           \
-      MACSio-openmpi3                        \
+pkgs="openmpi3 hwloc ndctl fio     \
+      patchutils ior               \
+      romio-tests                  \
+      testmpio                     \
+      mpi4py-tests                 \
+      hdf5-mpich-tests             \
+      hdf5-openmpi3-tests          \
+      hdf5-vol-daos-mpich-tests    \
+      hdf5-vol-daos-openmpi3-tests \
+      MACSio-mpich                 \
+      MACSio-openmpi3              \
       mpifileutils-mpich"
 
 if [[ $distro = el8* ]] || [[ $distro = centos8* ]]; then
