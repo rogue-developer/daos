@@ -18,7 +18,6 @@
 #include <spdk/bdev.h>
 #include <spdk/blob_bdev.h>
 #include <spdk/blob.h>
-#include <spdk/conf.h>
 #include "bio_internal.h"
 #include <daos_srv/smd.h>
 
@@ -61,6 +60,7 @@ struct bio_nvme_data {
 	/* All bdevs can be used by DAOS server */
 	d_list_t		 bd_bdevs;
 	uint64_t		 bd_scan_age;
+	/* Path to input SPDK JSON NVMe config file */
 	const char		*bd_nvme_conf;
 	int			 bd_shm_id;
 	/* When using SPDK primary mode, specifies memory allocation in MB */
@@ -637,7 +637,8 @@ load_blobstore(struct bio_xs_context *ctxt, char *bdev_name, uuid_t *bs_uuid,
 
 	bs_opts = nvme_glb.bd_bs_opts;
 	/*
-	 * A little hack here, we store a UUID in the 16 bytes 'bstype'* and use it as the block device ID.
+	 * A little hack here, we store a UUID in the 16 bytes 'bstype'* and
+	 * use it as the block device ID.
 	 */
 	D_ASSERT(SPDK_BLOBSTORE_TYPE_LENGTH == 16);
 	if (bs_uuid == NULL)
@@ -1499,8 +1500,8 @@ bio_xsctxt_alloc(struct bio_xs_context **pctxt, int tgt_id)
 	/*
 	 * Register SPDK thread beforehand, it could be used for poll device
 	 * admin commands completions and hotplugged events in following
-	 * spdk_subsystem_init() call, it also could be used for blobstore
-	 * metadata io channel in following init_bio_bdevs() call.
+	 * spdk_subsystem_init_from_json_config() call, it also could be used
+	 * for blobstore metadata io channel in init_bio_bdevs() call.
 	 */
 	snprintf(th_name, sizeof(th_name), "daos_spdk_%d", tgt_id);
 	ctxt->bxc_thread = spdk_thread_create((const char *)th_name, NULL);
