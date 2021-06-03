@@ -49,11 +49,38 @@ type (
 	testMetricsMap map[MetricType]*testMetric
 )
 
-func setupTestMetrics(t *testing.T) (context.Context, testMetricsMap) {
-	rc := C.d_tm_init(42, 8192, 0)
+func initTestMetricsProducer(t *testing.T, id int, size uint64) {
+	rc := C.d_tm_init(C.int(id), C.ulong(size), C.D_TM_SERVER_PROCESS)
 	if rc != 0 {
 		t.Fatalf("failed to init telemetry: %d", rc)
 	}
+}
+
+func addTestMetrics(t *testing.T, testMetrics testMetricsMap) {
+	for mt, tm := range testMetrics {
+		switch mt {
+		case MetricTypeGauge:
+			rc := C.add_metric(&tm.node, C.D_TM_GAUGE, C.CString(tm.desc), C.CString(tm.units), C.CString(tm.name))
+			if rc != 0 {
+				t.Fatalf("failed to add %s: %d", tm.name, rc)
+			}
+			for _, val := range []float64{tm.min, tm.max, tm.cur} {
+				C.d_tm_set_gauge(tm.node, C.uint64_t(val))
+			}
+		case MetricTypeCounter:
+			rc := C.add_metric(&tm.node, C.D_TM_COUNTER, C.CString(tm.desc), C.CString(tm.units), C.CString(tm.name))
+			if rc != 0 {
+				t.Fatalf("failed to add %s: %d", tm.name, rc)
+			}
+			C.d_tm_inc_counter(tm.node, 1)
+		default:
+			t.Fatalf("metric type %d not supported", mt)
+		}
+	}
+}
+
+func setupTestMetrics(t *testing.T) (context.Context, testMetricsMap) {
+	initTestMetricsProducer(t, 42, 8192)
 
 	ctx, err := Init(context.Background(), 42)
 	if err != nil {
@@ -82,31 +109,16 @@ func setupTestMetrics(t *testing.T) (context.Context, testMetricsMap) {
 		},
 	}
 
-	for mt, tm := range testMetrics {
-		switch mt {
-		case MetricTypeGauge:
-			rc = C.add_metric(&tm.node, C.D_TM_GAUGE, C.CString(tm.desc), C.CString(tm.units), C.CString(tm.name))
-			if rc != 0 {
-				t.Fatalf("failed to add %s: %d", tm.name, rc)
-			}
-			for _, val := range []float64{tm.min, tm.max, tm.cur} {
-				C.d_tm_set_gauge(tm.node, C.uint64_t(val))
-			}
-		case MetricTypeCounter:
-			rc = C.add_metric(&tm.node, C.D_TM_COUNTER, C.CString(tm.desc), C.CString(tm.units), C.CString(tm.name))
-			if rc != 0 {
-				t.Fatalf("failed to add %s: %d", tm.name, rc)
-			}
-			C.d_tm_inc_counter(tm.node, 1)
-		default:
-			t.Fatalf("metric type %d not supported", mt)
-		}
-	}
+	addTestMetrics(t, testMetrics)
 
 	return ctx, testMetrics
 }
 
 func cleanupTestMetrics(ctx context.Context, t *testing.T) {
 	Detach(ctx)
+	cleanupTestMetricsProducer(t)
+}
+
+func cleanupTestMetricsProducer(t *testing.T) {
 	C.d_tm_fini()
 }

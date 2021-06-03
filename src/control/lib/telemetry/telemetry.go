@@ -103,6 +103,9 @@ func (h *handle) isValid() bool {
 }
 
 func getHandle(ctx context.Context) (*handle, error) {
+	if ctx == nil {
+		return nil, errors.New("nil context")
+	}
 	handle, ok := ctx.Value(handleKey).(*handle)
 	if !ok {
 		return nil, errors.New("no handle set on context")
@@ -240,6 +243,7 @@ func (sm *statsMetric) SampleSize() uint64 {
 
 func collectGarbageLoop(ctx context.Context) {
 	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
