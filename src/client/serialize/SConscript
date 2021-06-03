@@ -9,7 +9,7 @@ def scons():
 
     have_hdf5 = True
 
-    #If hdf5 installed build hdf_serialize library
+   #If hdf5 installed build hdf_serialize library
     conf = Configure(denv)
     if not conf.CheckLibWithHeader('hdf5', 'hdf5.h', 'c'):
         have_hdf5 = False
